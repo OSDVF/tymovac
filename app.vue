@@ -1,6 +1,10 @@
 <template>
   <div>
     <h2>Týmovač</h2>
+    <div style="float:right">
+      <button @click="copyToClip">Kopírovat do 📋</button>
+      <button @click="getFromClip">Načíst z 📋</button>
+    </div>
     <form @submit.prevent="newPerson">
       <input
         type="text"
@@ -27,6 +31,7 @@
         type="submit"
         value="+ 🧑‍🤝‍🧑"
       />
+      &ensp;
     </form>
     <div class="teams">
       <div
@@ -135,7 +140,8 @@ export default {
       if (localStorage.teams) {
         var parsed;
         try {
-          parsed = JSON.parse(localStorage.teams)
+          parsed = JSON.parse(localStorage.teams);
+          this.error = '';
         }
         catch (e) {
           this.error = e;
@@ -238,6 +244,52 @@ export default {
           this.save();
         }
       }
+    },
+    async getFromClip() {
+      const text = await navigator.clipboard.readText();
+      try {
+        this.teams = JSON.parse(text);
+        this.error = '';
+      }
+      catch (e) {
+        this.error = e;
+      }
+    },
+    copyToClip() {
+      var text = JSON.stringify(this.teams);
+
+      function fallbackCopyTextToClipboard(text) {
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
+
+        // Avoid scrolling to bottom
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.position = "fixed";
+
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+          var successful = document.execCommand('copy');
+          var msg = successful ? 'successful' : 'unsuccessful';
+          console.log('Fallback: Copying text command was ' + msg);
+        } catch (err) {
+          this.error = 'Ajaj, nepodařilo se zkopírovat';
+        }
+
+        document.body.removeChild(textArea);
+      }
+      if (!navigator.clipboard) {
+        fallbackCopyTextToClipboard(text);
+        return;
+      }
+      navigator.clipboard.writeText(text).then(function () {
+        console.log('Async: Copying to clipboard was successful!');
+      }, function (err) {
+        this.error = 'Ajaj, nepodařilo se zkopírovat, jak mělo';
+      });
     }
   }
 }
