@@ -1,6 +1,9 @@
 <template>
   <div>
     <h2>Týmovač</h2>
+    <small>
+      Přesouvání lidí funguje jen na zařízeních s myší. Kdyžtak si sežeňte kamaráda s počítačem.
+    </small>
     <div style="float:right">
       <button @click="copyToClip">Kopírovat do 📋</button>
       <button @click="getFromClip">Načíst z 📋</button>
