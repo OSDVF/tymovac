@@ -59,7 +59,7 @@
           @dragenter.prevent
         >
           <img
-            src="person.svg"
+            src="/person.svg"
             alt="Osoba"
           />
           <span>{{person.name}}</span>&ensp;
@@ -75,7 +75,7 @@
             >
               &gt;
               <img
-                src="person.svg"
+                src="/person.svg"
                 alt="Osoba"
               />
               <span>{{friend.name}}</span>&ensp;
