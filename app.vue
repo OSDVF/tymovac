@@ -94,6 +94,9 @@
 
 <script>
 import '~/style.scss'
+if (process.client) {
+  import('drag-drop-touch');
+}
 
 export default {
   data() {
