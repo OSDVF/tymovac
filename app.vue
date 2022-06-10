@@ -85,12 +85,22 @@
         </div>
       </div>
     </div>
+    <br>
+    <textarea
+      placeholder="Komentář..."
+      v-model="comments"
+      @input="sendComments"
+      @focus="editing = true"
+      @blur="editing = false"
+    ></textarea>
     {{error}}
   </div>
 </template>
 
 <script>
 import '~/style.scss'
+import { db } from "~/firebase.js"
+import { get, ref, set, onValue, push, onDisconnect } from "firebase/database";
 if (process.client) {
   import('drag-drop-touch');
 }
@@ -98,6 +108,8 @@ if (process.client) {
 export default {
   data() {
     return {
+      editing: false,
+      connected: 1,
       dragging: false,
       error: '',
       newName: '',
@@ -108,12 +120,89 @@ export default {
           people: []
         }
       ],
+      comments: ""
     }
   },
-  mounted() {
-    this.load();
+  async mounted() {
+    if (this.$route.query?.id) {
+      try {
+        this.error = '';
+        var snapshot = await get(ref(db, this.$route.query.id))
+        if (snapshot.exists()) {
+          var resultVal = snapshot.val();
+          this.updateDisplayedData(resultVal);
+          onValue(ref(db, this.$route.query.id), (snapshot) => {
+            const data = snapshot.val();
+            if (!this.editing) {
+              this.updateDisplayedData(data);
+            }
+          });
+
+          var connectionsRef = ref(db, "/connections/" + this.$route.query.id);
+
+          var connectedRef = ref(db, ".info/connected/");
+          // Number of online users is the number of objects in the presence list.
+
+          // When the client's connection state changes...
+          onValue(connectedRef, async (snap) => {
+
+            // If they are connected..
+            if (snap.val()) {
+
+              // Add user to the connections list.
+              var con = await push(connectionsRef, true);
+
+              // Remove user from the connection list when they disconnect.
+              onDisconnect(con).remove();
+            }
+          });
+
+          onValue(connectionsRef, (snap) => {
+            if (snap.val()) {
+              this.connected = snap.size;
+            }
+          })
+        }
+        else {
+          console.log("No data available");
+        }
+      }
+      catch (e) {
+        this.error = e;
+      }
+    }
+    else {
+      this.load();
+    }
   },
   methods: {
+    updateDisplayedData(data) {
+      this.teams = data.teams;
+      this.comments = data.comments;
+    },
+    async sendComments() {
+      if (this.$route.query?.id) {
+        try {
+          await set(ref(db, this.$route.query.id + '/comments'), this.comments);
+        }
+        catch (e) {
+          this.error = e;
+        }
+      }
+      else {
+        localStorage.comments = JSON.stringify(this.comments);
+      }
+    },
+    async sendTeams() {
+      if (this.$route.query?.id) {
+        try {
+          await set(ref(db, this.$route.query.id + '/teams'), this.teams);
+        }
+        catch (e) {
+          this.error = e;
+        }
+      }
+    },
     newPerson() {
       this.teams[0].people.push(
         {
@@ -137,7 +226,13 @@ export default {
       this.save();
     },
     save() {
-      localStorage.teams = JSON.stringify(this.teams);
+      if (this.$route.query?.id) {
+        this.sendTeams();
+      }
+      else {
+        localStorage.teams = JSON.stringify(this.teams);
+        localStorage.comments = JSON.stringify(this.comments);
+      }
     },
     load() {
       if (localStorage.teams) {
@@ -150,6 +245,15 @@ export default {
           this.error = e;
         }
         this.teams = parsed || this.teams;
+
+        try {
+          parsed = JSON.parse(localStorage.comments);
+          this.error = '';
+        }
+        catch (e) {
+          this.error = e;
+        }
+        this.comments = parsed || this.comments;
       }
     },
     removePerson(indexT, indexP, indexF) {
@@ -253,6 +357,7 @@ export default {
       try {
         this.teams = JSON.parse(text);
         this.error = '';
+        this.sendTeams();
       }
       catch (e) {
         this.error = e;
