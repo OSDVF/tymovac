@@ -1,5 +1,6 @@
 <template>
   <div>
+    <small v-if="$route.query?.id">Připojení účastníci: {{connected}}</small>
     <h2>Týmovač</h2>
     <div style="float:right">
       <button @click="copyToClip">Kopírovat do 📋</button>
@@ -288,9 +289,14 @@ export default {
         evt.dataTransfer.getData('indexes')
       );
 
-      var draggedPerson = this.teams[draggedT].people[draggedP];
-
+      var draggedPerson = this.teams[draggedT]?.people[draggedP];
+      if (!this.teams[indexT].people) {
+        this.teams[indexT].people = [];
+      }
       if (typeof draggedF != 'undefined') {
+        if (!this.teams[indexT].people[indexP].friends) {
+          this.teams[indexT].people[indexP].friends = [];
+        }
         this.teams[indexT].people[indexP].friends.push(
           draggedPerson.friends[draggedF]
         );
@@ -305,6 +311,9 @@ export default {
         var friendsToAdd = [];
         if (draggedPerson.friends?.length > 0) {
           friendsToAdd = draggedPerson.friends;
+        }
+        if (!this.teams[indexT].people[indexP].friends) {
+          this.teams[indexT].people[indexP].friends = [];
         }
         this.teams[indexT].people[indexP].friends.push(
           {
@@ -327,13 +336,19 @@ export default {
         evt.dataTransfer.getData('indexes')
       );
 
-      var draggedPerson = this.teams[draggedT].people[draggedP];
+      var draggedPerson = (this.teams[draggedT]?.people ?? [])[draggedP];
+      if (!this.teams[indexT].people) {
+        this.teams[indexT].people = [];
+      }
       if (typeof draggedPerson != 'undefined') {
         //If the dragged item still exists
         if (draggedT == indexT)
           return;//Dragged to same team
 
         if (typeof draggedF != 'undefined') {
+          if (!draggedPerson.friends) {
+            draggedPerson.friends = [];
+          }
           var draggedFriend = draggedPerson.friends[draggedF];
           if (typeof draggedFriend != 'undefined') {
             this.teams[indexT].people.push(
